@@ -1,0 +1,882 @@
+<title>2026학년도 수강신청 위계 점검 대시보드</title>
+<style>
+  :root {
+    --bg: #F3F6F9;
+    --surface: #FFFFFF;
+    --surface-alt: #EAF0F6;
+    --text: #1B2430;
+    --text-muted: #5B6B7C;
+    --accent: #2C5282;
+    --accent-strong: #1E3A5F;
+    --accent-soft: #DCE7F3;
+    --danger: #B3432E;
+    --danger-soft: #F8E6E1;
+    --success: #2F7D5C;
+    --success-soft: #E3F1E9;
+    --border: #D8E0E8;
+    --shadow: 0 1px 2px rgba(30, 45, 64, 0.06), 0 4px 16px rgba(30, 45, 64, 0.05);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1620;
+    --surface: #171F2A;
+    --surface-alt: #1E2733;
+    --text: #E6ECF2;
+    --text-muted: #93A2B3;
+    --accent: #7CA6D9;
+    --accent-strong: #A9C6EA;
+    --accent-soft: #223349;
+    --danger: #E2897A;
+    --danger-soft: #3B241F;
+    --success: #86CBAA;
+    --success-soft: #1C3327;
+    --border: #2A3644;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1620;
+      --surface: #171F2A;
+      --surface-alt: #1E2733;
+      --text: #E6ECF2;
+      --text-muted: #93A2B3;
+      --accent: #7CA6D9;
+      --accent-strong: #A9C6EA;
+      --accent-soft: #223349;
+      --danger: #E2897A;
+      --danger-soft: #3B241F;
+      --success: #86CBAA;
+      --success-soft: #1C3327;
+      --border: #2A3644;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", "Noto Sans KR", system-ui, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  /* Header */
+  header.page {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* KPI row */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .kpi .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .kpi .value {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .kpi.warn .value { color: var(--danger); }
+  .kpi .sub { font-size: 12px; color: var(--text-muted); }
+
+  /* Class overview */
+  section.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .card .hint {
+    margin: 0 0 14px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  .class-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 8px;
+  }
+  .class-tile {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-alt);
+    padding: 10px 8px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+    font: inherit;
+    color: inherit;
+  }
+  .class-tile:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .class-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .class-tile.active { border-color: var(--accent); background: var(--accent-soft); }
+  .class-tile .cnum { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+  .class-tile .ccount {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 4px 0 6px;
+  }
+  .class-tile.has-issue .ccount { color: var(--danger); }
+  .class-tile:not(.has-issue) .ccount { color: var(--success); }
+  .bar-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; background: var(--danger); }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 12px;
+    z-index: 5;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+  }
+  .search-box {
+    flex: 1 1 220px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+  }
+  .search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    color: var(--text);
+    font-size: 14px;
+    width: 100%;
+    font-family: inherit;
+  }
+  .search-box svg { flex: none; opacity: 0.55; }
+  select#classSelect {
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 9px 10px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    user-select: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .toggle input { accent-color: var(--danger); width: 16px; height: 16px; }
+  .reset-btn {
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--text-muted);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .reset-btn:hover { color: var(--text); border-color: var(--accent); }
+  .download-btn {
+    border: 1px solid var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .download-btn:hover { filter: brightness(0.97); }
+
+  /* Data source card */
+  .upload-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .upload-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .upload-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .file-btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .file-btn:hover { filter: brightness(1.06); }
+  .upload-status {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    min-height: 16px;
+  }
+  .upload-status.err { color: var(--danger); font-weight: 600; }
+  .upload-status.ok { color: var(--success); font-weight: 600; }
+  .source-label {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  thead th {
+    text-align: left;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 8px 10px;
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+  }
+  .class-header td {
+    padding: 16px 10px 6px;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--accent-strong);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr.student-row td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr.student-row.issue { background: var(--danger-soft); }
+  tbody tr.student-row.issue td:first-child {
+    box-shadow: inset 3px 0 0 var(--danger);
+  }
+  td.id-cell { font-weight: 700; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .status-pill.ok { background: var(--success-soft); color: var(--success); }
+  .status-pill.bad { background: var(--danger); color: #fff; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .status-pill.bad { color: #1b100c; }
+  }
+  :root[data-theme="dark"] .status-pill.bad { color: #1b100c; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .chip .pre { color: var(--danger); font-weight: 700; }
+  .chip .arrow { color: var(--text-muted); }
+  .chip .adv { font-weight: 600; }
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* Legend / rule reference */
+  .rule-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .rule-group h3 {
+    margin: 0 0 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .rule-list { display: flex; flex-direction: column; gap: 6px; }
+  .rule-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    padding: 7px 10px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+  }
+  .rule-item .p { font-weight: 700; }
+  .rule-item .a { color: var(--text-muted); }
+  .rule-item .sem { margin-left: auto; font-size: 11px; color: var(--text-muted); }
+
+  footer.note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 720px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .class-grid { grid-template-columns: repeat(5, 1fr); }
+    .rule-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="page">
+    <span class="eyebrow">Credit Registration · Hierarchy Check</span>
+    <h1>2026학년도 수강신청 위계 점검 대시보드</h1>
+    <p class="subtitle">선수과목 미이수 상태로 후속(심화) 과목을 신청한 학생을 반별로 확인합니다. 담임 선생님은 아래 반 목록에서 본인 학급을 선택해 확인해 주세요.</p>
+  </header>
+
+  <section class="card upload-card">
+    <div class="upload-row">
+      <div>
+        <h2>데이터 불러오기</h2>
+        <p class="hint">현재 표시 중: <span class="source-label" id="sourceLabel">원본 파일 (0617확인)</span></p>
+      </div>
+      <div class="upload-actions">
+        <label class="file-btn" for="fileInput">다른 CSV 불러오기</label>
+        <input type="file" id="fileInput" accept=".csv,text/csv" hidden />
+        <button class="reset-btn" id="resetDataBtn">원본 데이터로 초기화</button>
+      </div>
+    </div>
+    <p class="upload-status" id="uploadStatus">같은 서식(고유번호 + 과목별 1/0 신청표)의 CSV라면 학년도·학기가 달라도 자동으로 다시 계산됩니다.</p>
+  </section>
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <section class="card">
+    <h2>반별 위계 오류 현황</h2>
+    <p class="hint">반 카드를 클릭하면 해당 반 학생만 표에 표시됩니다.</p>
+    <div class="class-grid" id="classGrid"></div>
+  </section>
+
+  <div class="controls">
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="학번 검색 (예: 10305)" autocomplete="off" />
+    </div>
+    <select id="classSelect"></select>
+    <label class="toggle">
+      <input type="checkbox" id="onlyIssues" />
+      오류 학생만 보기
+    </label>
+    <button class="reset-btn" id="resetBtn">필터 초기화</button>
+    <button class="download-btn" id="downloadBtn">🖥 결과를 새 창(HTML)으로 열기</button>
+  </div>
+  <p class="hint" style="margin:-10px 2px 0;">새 창이 열리면 <span class="mono">Ctrl+S</span>로 HTML 파일 저장, <span class="mono">Ctrl+P</span>로 인쇄/PDF 저장이 가능합니다.</p>
+
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:90px">학번</th>
+            <th style="width:70px">상태</th>
+            <th>위계 오류 상세 (선수과목 → 신청한 후속과목)</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">조건에 해당하는 학생이 없습니다.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>위계 판정 기준</h2>
+    <p class="hint">선수과목(왼쪽)을 신청하지 않은 채 후속·심화과목(오른쪽)만 신청한 경우 오류로 표시됩니다.</p>
+    <div class="rule-grid" id="ruleGrid"></div>
+  </section>
+
+  <footer class="note">고유번호 및 수강신청 데이터 기준 자동 생성 · 원본 파일의 신청 여부(1/0) 값을 그대로 사용합니다.</footer>
+</div>
+
+<script id="dashboard-data" type="application/json">{"summary":{"totalStudents":349,"totalClasses":10,"studentsWithViolations":29,"totalViolations":35},"students":[{"id":"10101","grade":1,"class":1,"number":1,"violationCount":2,"violations":[{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"},{"domain":"과학","prereq":"지구과학","advanced":"지구시스템과학"}]},{"id":"10102","grade":1,"class":1,"number":2,"violationCount":0,"violations":[]},{"id":"10103","grade":1,"class":1,"number":3,"violationCount":0,"violations":[]},{"id":"10104","grade":1,"class":1,"number":4,"violationCount":0,"violations":[]},{"id":"10105","grade":1,"class":1,"number":5,"violationCount":0,"violations":[]},{"id":"10106","grade":1,"class":1,"number":6,"violationCount":0,"violations":[]},{"id":"10107","grade":1,"class":1,"number":7,"violationCount":0,"violations":[]},{"id":"10108","grade":1,"class":1,"number":8,"violationCount":0,"violations":[]},{"id":"10109","grade":1,"class":1,"number":9,"violationCount":0,"violations":[]},{"id":"10110","grade":1,"class":1,"number":10,"violationCount":0,"violations":[]},{"id":"10111","grade":1,"class":1,"number":11,"violationCount":0,"violations":[]},{"id":"10112","grade":1,"class":1,"number":12,"violationCount":0,"violations":[]},{"id":"10113","grade":1,"class":1,"number":13,"violationCount":0,"violations":[]},{"id":"10114","grade":1,"class":1,"number":14,"violationCount":0,"violations":[]},{"id":"10115","grade":1,"class":1,"number":15,"violationCount":0,"violations":[]},{"id":"10116","grade":1,"class":1,"number":16,"violationCount":0,"violations":[]},{"id":"10117","grade":1,"class":1,"number":17,"violationCount":0,"violations":[]},{"id":"10118","grade":1,"class":1,"number":18,"violationCount":0,"violations":[]},{"id":"10119","grade":1,"class":1,"number":19,"violationCount":0,"violations":[]},{"id":"10120","grade":1,"class":1,"number":20,"violationCount":0,"violations":[]},{"id":"10121","grade":1,"class":1,"number":21,"violationCount":0,"violations":[]},{"id":"10122","grade":1,"class":1,"number":22,"violationCount":0,"violations":[]},{"id":"10123","grade":1,"class":1,"number":23,"violationCount":0,"violations":[]},{"id":"10124","grade":1,"class":1,"number":24,"violationCount":0,"violations":[]},{"id":"10125","grade":1,"class":1,"number":25,"violationCount":0,"violations":[]},{"id":"10126","grade":1,"class":1,"number":26,"violationCount":0,"violations":[]},{"id":"10127","grade":1,"class":1,"number":27,"violationCount":0,"violations":[]},{"id":"10128","grade":1,"class":1,"number":28,"violationCount":0,"violations":[]},{"id":"10129","grade":1,"class":1,"number":29,"violationCount":0,"violations":[]},{"id":"10130","grade":1,"class":1,"number":30,"violationCount":0,"violations":[]},{"id":"10131","grade":1,"class":1,"number":31,"violationCount":0,"violations":[]},{"id":"10132","grade":1,"class":1,"number":32,"violationCount":0,"violations":[]},{"id":"10133","grade":1,"class":1,"number":33,"violationCount":0,"violations":[]},{"id":"10134","grade":1,"class":1,"number":34,"violationCount":0,"violations":[]},{"id":"10201","grade":1,"class":2,"number":1,"violationCount":0,"violations":[]},{"id":"10202","grade":1,"class":2,"number":2,"violationCount":0,"violations":[]},{"id":"10203","grade":1,"class":2,"number":3,"violationCount":0,"violations":[]},{"id":"10204","grade":1,"class":2,"number":4,"violationCount":0,"violations":[]},{"id":"10205","grade":1,"class":2,"number":5,"violationCount":0,"violations":[]},{"id":"10206","grade":1,"class":2,"number":6,"violationCount":0,"violations":[]},{"id":"10207","grade":1,"class":2,"number":7,"violationCount":0,"violations":[]},{"id":"10208","grade":1,"class":2,"number":8,"violationCount":0,"violations":[]},{"id":"10209","grade":1,"class":2,"number":9,"violationCount":0,"violations":[]},{"id":"10210","grade":1,"class":2,"number":10,"violationCount":0,"violations":[]},{"id":"10211","grade":1,"class":2,"number":11,"violationCount":0,"violations":[]},{"id":"10212","grade":1,"class":2,"number":12,"violationCount":0,"violations":[]},{"id":"10213","grade":1,"class":2,"number":13,"violationCount":0,"violations":[]},{"id":"10214","grade":1,"class":2,"number":14,"violationCount":0,"violations":[]},{"id":"10215","grade":1,"class":2,"number":15,"violationCount":0,"violations":[]},{"id":"10216","grade":1,"class":2,"number":16,"violationCount":0,"violations":[]},{"id":"10217","grade":1,"class":2,"number":17,"violationCount":0,"violations":[]},{"id":"10218","grade":1,"class":2,"number":18,"violationCount":0,"violations":[]},{"id":"10219","grade":1,"class":2,"number":19,"violationCount":0,"violations":[]},{"id":"10220","grade":1,"class":2,"number":20,"violationCount":0,"violations":[]},{"id":"10221","grade":1,"class":2,"number":21,"violationCount":1,"violations":[{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"}]},{"id":"10222","grade":1,"class":2,"number":22,"violationCount":0,"violations":[]},{"id":"10223","grade":1,"class":2,"number":23,"violationCount":0,"violations":[]},{"id":"10224","grade":1,"class":2,"number":24,"violationCount":0,"violations":[]},{"id":"10225","grade":1,"class":2,"number":25,"violationCount":0,"violations":[]},{"id":"10226","grade":1,"class":2,"number":26,"violationCount":1,"violations":[{"domain":"과학","prereq":"물리학","advanced":"역학과 에너지"}]},{"id":"10227","grade":1,"class":2,"number":27,"violationCount":0,"violations":[]},{"id":"10228","grade":1,"class":2,"number":28,"violationCount":0,"violations":[]},{"id":"10229","grade":1,"class":2,"number":29,"violationCount":0,"violations":[]},{"id":"10230","grade":1,"class":2,"number":30,"violationCount":0,"violations":[]},{"id":"10231","grade":1,"class":2,"number":31,"violationCount":1,"violations":[{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"}]},{"id":"10232","grade":1,"class":2,"number":32,"violationCount":0,"violations":[]},{"id":"10233","grade":1,"class":2,"number":33,"violationCount":0,"violations":[]},{"id":"10234","grade":1,"class":2,"number":34,"violationCount":0,"violations":[]},{"id":"10235","grade":1,"class":2,"number":35,"violationCount":0,"violations":[]},{"id":"10301","grade":1,"class":3,"number":1,"violationCount":0,"violations":[]},{"id":"10302","grade":1,"class":3,"number":2,"violationCount":0,"violations":[]},{"id":"10303","grade":1,"class":3,"number":3,"violationCount":0,"violations":[]},{"id":"10304","grade":1,"class":3,"number":4,"violationCount":0,"violations":[]},{"id":"10305","grade":1,"class":3,"number":5,"violationCount":0,"violations":[]},{"id":"10306","grade":1,"class":3,"number":6,"violationCount":0,"violations":[]},{"id":"10307","grade":1,"class":3,"number":7,"violationCount":0,"violations":[]},{"id":"10308","grade":1,"class":3,"number":8,"violationCount":0,"violations":[]},{"id":"10309","grade":1,"class":3,"number":9,"violationCount":0,"violations":[]},{"id":"10310","grade":1,"class":3,"number":10,"violationCount":0,"violations":[]},{"id":"10311","grade":1,"class":3,"number":11,"violationCount":0,"violations":[]},{"id":"10312","grade":1,"class":3,"number":12,"violationCount":0,"violations":[]},{"id":"10313","grade":1,"class":3,"number":13,"violationCount":1,"violations":[{"domain":"제2외/AI","prereq":"일본어","advanced":"일본어 회화"}]},{"id":"10314","grade":1,"class":3,"number":14,"violationCount":0,"violations":[]},{"id":"10315","grade":1,"class":3,"number":15,"violationCount":0,"violations":[]},{"id":"10316","grade":1,"class":3,"number":16,"violationCount":0,"violations":[]},{"id":"10317","grade":1,"class":3,"number":17,"violationCount":0,"violations":[]},{"id":"10318","grade":1,"class":3,"number":18,"violationCount":0,"violations":[]},{"id":"10319","grade":1,"class":3,"number":19,"violationCount":0,"violations":[]},{"id":"10320","grade":1,"class":3,"number":20,"violationCount":0,"violations":[]},{"id":"10321","grade":1,"class":3,"number":21,"violationCount":0,"violations":[]},{"id":"10322","grade":1,"class":3,"number":22,"violationCount":0,"violations":[]},{"id":"10323","grade":1,"class":3,"number":23,"violationCount":0,"violations":[]},{"id":"10324","grade":1,"class":3,"number":24,"violationCount":0,"violations":[]},{"id":"10325","grade":1,"class":3,"number":25,"violationCount":0,"violations":[]},{"id":"10326","grade":1,"class":3,"number":26,"violationCount":0,"violations":[]},{"id":"10327","grade":1,"class":3,"number":27,"violationCount":0,"violations":[]},{"id":"10328","grade":1,"class":3,"number":28,"violationCount":0,"violations":[]},{"id":"10329","grade":1,"class":3,"number":29,"violationCount":0,"violations":[]},{"id":"10330","grade":1,"class":3,"number":30,"violationCount":0,"violations":[]},{"id":"10331","grade":1,"class":3,"number":31,"violationCount":0,"violations":[]},{"id":"10332","grade":1,"class":3,"number":32,"violationCount":0,"violations":[]},{"id":"10333","grade":1,"class":3,"number":33,"violationCount":0,"violations":[]},{"id":"10334","grade":1,"class":3,"number":34,"violationCount":0,"violations":[]},{"id":"10335","grade":1,"class":3,"number":35,"violationCount":0,"violations":[]},{"id":"10401","grade":1,"class":4,"number":1,"violationCount":0,"violations":[]},{"id":"10402","grade":1,"class":4,"number":2,"violationCount":0,"violations":[]},{"id":"10403","grade":1,"class":4,"number":3,"violationCount":0,"violations":[]},{"id":"10404","grade":1,"class":4,"number":4,"violationCount":1,"violations":[{"domain":"제2외/AI","prereq":"인공지능 기초","advanced":"데이터 과학"}]},{"id":"10405","grade":1,"class":4,"number":5,"violationCount":0,"violations":[]},{"id":"10406","grade":1,"class":4,"number":6,"violationCount":0,"violations":[]},{"id":"10407","grade":1,"class":4,"number":7,"violationCount":0,"violations":[]},{"id":"10408","grade":1,"class":4,"number":8,"violationCount":0,"violations":[]},{"id":"10409","grade":1,"class":4,"number":9,"violationCount":0,"violations":[]},{"id":"10410","grade":1,"class":4,"number":10,"violationCount":0,"violations":[]},{"id":"10411","grade":1,"class":4,"number":11,"violationCount":0,"violations":[]},{"id":"10412","grade":1,"class":4,"number":12,"violationCount":0,"violations":[]},{"id":"10413","grade":1,"class":4,"number":13,"violationCount":0,"violations":[]},{"id":"10414","grade":1,"class":4,"number":14,"violationCount":0,"violations":[]},{"id":"10415","grade":1,"class":4,"number":15,"violationCount":0,"violations":[]},{"id":"10416","grade":1,"class":4,"number":16,"violationCount":0,"violations":[]},{"id":"10417","grade":1,"class":4,"number":17,"violationCount":0,"violations":[]},{"id":"10418","grade":1,"class":4,"number":18,"violationCount":2,"violations":[{"domain":"과학","prereq":"물리학","advanced":"역학과 에너지"},{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"}]},{"id":"10419","grade":1,"class":4,"number":19,"violationCount":0,"violations":[]},{"id":"10420","grade":1,"class":4,"number":20,"violationCount":0,"violations":[]},{"id":"10421","grade":1,"class":4,"number":21,"violationCount":0,"violations":[]},{"id":"10422","grade":1,"class":4,"number":22,"violationCount":0,"violations":[]},{"id":"10423","grade":1,"class":4,"number":23,"violationCount":0,"violations":[]},{"id":"10424","grade":1,"class":4,"number":24,"violationCount":0,"violations":[]},{"id":"10425","grade":1,"class":4,"number":25,"violationCount":0,"violations":[]},{"id":"10426","grade":1,"class":4,"number":26,"violationCount":0,"violations":[]},{"id":"10427","grade":1,"class":4,"number":27,"violationCount":0,"violations":[]},{"id":"10428","grade":1,"class":4,"number":28,"violationCount":0,"violations":[]},{"id":"10429","grade":1,"class":4,"number":29,"violationCount":0,"violations":[]},{"id":"10430","grade":1,"class":4,"number":30,"violationCount":0,"violations":[]},{"id":"10431","grade":1,"class":4,"number":31,"violationCount":0,"violations":[]},{"id":"10432","grade":1,"class":4,"number":32,"violationCount":0,"violations":[]},{"id":"10433","grade":1,"class":4,"number":33,"violationCount":0,"violations":[]},{"id":"10434","grade":1,"class":4,"number":34,"violationCount":0,"violations":[]},{"id":"10435","grade":1,"class":4,"number":35,"violationCount":0,"violations":[]},{"id":"10501","grade":1,"class":5,"number":1,"violationCount":0,"violations":[]},{"id":"10502","grade":1,"class":5,"number":2,"violationCount":0,"violations":[]},{"id":"10503","grade":1,"class":5,"number":3,"violationCount":0,"violations":[]},{"id":"10504","grade":1,"class":5,"number":4,"violationCount":0,"violations":[]},{"id":"10505","grade":1,"class":5,"number":5,"violationCount":3,"violations":[{"domain":"과학","prereq":"물리학","advanced":"역학과 에너지"},{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"},{"domain":"제2외/AI","prereq":"일본어","advanced":"일본어 회화"}]},{"id":"10506","grade":1,"class":5,"number":6,"violationCount":0,"violations":[]},{"id":"10507","grade":1,"class":5,"number":7,"violationCount":0,"violations":[]},{"id":"10508","grade":1,"class":5,"number":8,"violationCount":0,"violations":[]},{"id":"10509","grade":1,"class":5,"number":9,"violationCount":0,"violations":[]},{"id":"10510","grade":1,"class":5,"number":10,"violationCount":0,"violations":[]},{"id":"10511","grade":1,"class":5,"number":11,"violationCount":0,"violations":[]},{"id":"10512","grade":1,"class":5,"number":12,"violationCount":0,"violations":[]},{"id":"10513","grade":1,"class":5,"number":13,"violationCount":0,"violations":[]},{"id":"10514","grade":1,"class":5,"number":14,"violationCount":0,"violations":[]},{"id":"10515","grade":1,"class":5,"number":15,"violationCount":0,"violations":[]},{"id":"10516","grade":1,"class":5,"number":16,"violationCount":0,"violations":[]},{"id":"10517","grade":1,"class":5,"number":17,"violationCount":0,"violations":[]},{"id":"10518","grade":1,"class":5,"number":18,"violationCount":0,"violations":[]},{"id":"10519","grade":1,"class":5,"number":19,"violationCount":0,"violations":[]},{"id":"10520","grade":1,"class":5,"number":20,"violationCount":0,"violations":[]},{"id":"10521","grade":1,"class":5,"number":21,"violationCount":0,"violations":[]},{"id":"10522","grade":1,"class":5,"number":22,"violationCount":0,"violations":[]},{"id":"10523","grade":1,"class":5,"number":23,"violationCount":0,"violations":[]},{"id":"10524","grade":1,"class":5,"number":24,"violationCount":0,"violations":[]},{"id":"10525","grade":1,"class":5,"number":25,"violationCount":0,"violations":[]},{"id":"10526","grade":1,"class":5,"number":26,"violationCount":0,"violations":[]},{"id":"10527","grade":1,"class":5,"number":27,"violationCount":0,"violations":[]},{"id":"10528","grade":1,"class":5,"number":28,"violationCount":0,"violations":[]},{"id":"10529","grade":1,"class":5,"number":29,"violationCount":0,"violations":[]},{"id":"10530","grade":1,"class":5,"number":30,"violationCount":0,"violations":[]},{"id":"10531","grade":1,"class":5,"number":31,"violationCount":0,"violations":[]},{"id":"10532","grade":1,"class":5,"number":32,"violationCount":0,"violations":[]},{"id":"10533","grade":1,"class":5,"number":33,"violationCount":1,"violations":[{"domain":"제2외/AI","prereq":"인공지능 기초","advanced":"데이터 과학"}]},{"id":"10534","grade":1,"class":5,"number":34,"violationCount":0,"violations":[]},{"id":"10535","grade":1,"class":5,"number":35,"violationCount":0,"violations":[]},{"id":"10601","grade":1,"class":6,"number":1,"violationCount":0,"violations":[]},{"id":"10602","grade":1,"class":6,"number":2,"violationCount":0,"violations":[]},{"id":"10603","grade":1,"class":6,"number":3,"violationCount":0,"violations":[]},{"id":"10604","grade":1,"class":6,"number":4,"violationCount":0,"violations":[]},{"id":"10605","grade":1,"class":6,"number":5,"violationCount":0,"violations":[]},{"id":"10606","grade":1,"class":6,"number":6,"violationCount":0,"violations":[]},{"id":"10607","grade":1,"class":6,"number":7,"violationCount":0,"violations":[]},{"id":"10608","grade":1,"class":6,"number":8,"violationCount":0,"violations":[]},{"id":"10609","grade":1,"class":6,"number":9,"violationCount":0,"violations":[]},{"id":"10610","grade":1,"class":6,"number":10,"violationCount":0,"violations":[]},{"id":"10611","grade":1,"class":6,"number":11,"violationCount":0,"violations":[]},{"id":"10612","grade":1,"class":6,"number":12,"violationCount":0,"violations":[]},{"id":"10613","grade":1,"class":6,"number":13,"violationCount":0,"violations":[]},{"id":"10614","grade":1,"class":6,"number":14,"violationCount":0,"violations":[]},{"id":"10615","grade":1,"class":6,"number":15,"violationCount":0,"violations":[]},{"id":"10616","grade":1,"class":6,"number":16,"violationCount":0,"violations":[]},{"id":"10617","grade":1,"class":6,"number":17,"violationCount":0,"violations":[]},{"id":"10618","grade":1,"class":6,"number":18,"violationCount":1,"violations":[{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"}]},{"id":"10619","grade":1,"class":6,"number":19,"violationCount":0,"violations":[]},{"id":"10620","grade":1,"class":6,"number":20,"violationCount":0,"violations":[]},{"id":"10621","grade":1,"class":6,"number":21,"violationCount":0,"violations":[]},{"id":"10622","grade":1,"class":6,"number":22,"violationCount":0,"violations":[]},{"id":"10623","grade":1,"class":6,"number":23,"violationCount":0,"violations":[]},{"id":"10624","grade":1,"class":6,"number":24,"violationCount":0,"violations":[]},{"id":"10625","grade":1,"class":6,"number":25,"violationCount":0,"violations":[]},{"id":"10626","grade":1,"class":6,"number":26,"violationCount":0,"violations":[]},{"id":"10627","grade":1,"class":6,"number":27,"violationCount":0,"violations":[]},{"id":"10628","grade":1,"class":6,"number":28,"violationCount":0,"violations":[]},{"id":"10629","grade":1,"class":6,"number":29,"violationCount":1,"violations":[{"domain":"과학","prereq":"생명과학","advanced":"세포와 물질대사"}]},{"id":"10630","grade":1,"class":6,"number":30,"violationCount":0,"violations":[]},{"id":"10631","grade":1,"class":6,"number":31,"violationCount":0,"violations":[]},{"id":"10632","grade":1,"class":6,"number":32,"violationCount":0,"violations":[]},{"id":"10633","grade":1,"class":6,"number":33,"violationCount":0,"violations":[]},{"id":"10634","grade":1,"class":6,"number":34,"violationCount":0,"violations":[]},{"id":"10635","grade":1,"class":6,"number":35,"violationCount":0,"violations":[]},{"id":"10701","grade":1,"class":7,"number":1,"violationCount":0,"violations":[]},{"id":"10702","grade":1,"class":7,"number":2,"violationCount":0,"violations":[]},{"id":"10703","grade":1,"class":7,"number":3,"violationCount":0,"violations":[]},{"id":"10704","grade":1,"class":7,"number":4,"violationCount":0,"violations":[]},{"id":"10705","grade":1,"class":7,"number":5,"violationCount":0,"violations":[]},{"id":"10706","grade":1,"class":7,"number":6,"violationCount":1,"violations":[{"domain":"과학","prereq":"생명과학","advanced":"세포와 물질대사"}]},{"id":"10707","grade":1,"class":7,"number":7,"violationCount":0,"violations":[]},{"id":"10708","grade":1,"class":7,"number":8,"violationCount":0,"violations":[]},{"id":"10709","grade":1,"class":7,"number":9,"violationCount":0,"violations":[]},{"id":"10710","grade":1,"class":7,"number":10,"violationCount":0,"violations":[]},{"id":"10711","grade":1,"class":7,"number":11,"violationCount":0,"violations":[]},{"id":"10712","grade":1,"class":7,"number":12,"violationCount":0,"violations":[]},{"id":"10713","grade":1,"class":7,"number":13,"violationCount":0,"violations":[]},{"id":"10714","grade":1,"class":7,"number":14,"violationCount":0,"violations":[]},{"id":"10715","grade":1,"class":7,"number":15,"violationCount":0,"violations":[]},{"id":"10716","grade":1,"class":7,"number":16,"violationCount":0,"violations":[]},{"id":"10717","grade":1,"class":7,"number":17,"violationCount":0,"violations":[]},{"id":"10718","grade":1,"class":7,"number":18,"violationCount":1,"violations":[{"domain":"과학","prereq":"생명과학","advanced":"세포와 물질대사"}]},{"id":"10719","grade":1,"class":7,"number":19,"violationCount":0,"violations":[]},{"id":"10720","grade":1,"class":7,"number":20,"violationCount":0,"violations":[]},{"id":"10721","grade":1,"class":7,"number":21,"violationCount":0,"violations":[]},{"id":"10722","grade":1,"class":7,"number":22,"violationCount":0,"violations":[]},{"id":"10723","grade":1,"class":7,"number":23,"violationCount":0,"violations":[]},{"id":"10724","grade":1,"class":7,"number":24,"violationCount":0,"violations":[]},{"id":"10725","grade":1,"class":7,"number":25,"violationCount":0,"violations":[]},{"id":"10726","grade":1,"class":7,"number":26,"violationCount":0,"violations":[]},{"id":"10727","grade":1,"class":7,"number":27,"violationCount":0,"violations":[]},{"id":"10728","grade":1,"class":7,"number":28,"violationCount":0,"violations":[]},{"id":"10729","grade":1,"class":7,"number":29,"violationCount":0,"violations":[]},{"id":"10730","grade":1,"class":7,"number":30,"violationCount":0,"violations":[]},{"id":"10731","grade":1,"class":7,"number":31,"violationCount":0,"violations":[]},{"id":"10732","grade":1,"class":7,"number":32,"violationCount":0,"violations":[]},{"id":"10733","grade":1,"class":7,"number":33,"violationCount":1,"violations":[{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"}]},{"id":"10734","grade":1,"class":7,"number":34,"violationCount":0,"violations":[]},{"id":"10735","grade":1,"class":7,"number":35,"violationCount":0,"violations":[]},{"id":"10801","grade":1,"class":8,"number":1,"violationCount":0,"violations":[]},{"id":"10802","grade":1,"class":8,"number":2,"violationCount":0,"violations":[]},{"id":"10803","grade":1,"class":8,"number":3,"violationCount":0,"violations":[]},{"id":"10804","grade":1,"class":8,"number":4,"violationCount":0,"violations":[]},{"id":"10805","grade":1,"class":8,"number":5,"violationCount":0,"violations":[]},{"id":"10806","grade":1,"class":8,"number":6,"violationCount":1,"violations":[{"domain":"과학","prereq":"지구과학","advanced":"지구시스템과학"}]},{"id":"10807","grade":1,"class":8,"number":7,"violationCount":0,"violations":[]},{"id":"10808","grade":1,"class":8,"number":8,"violationCount":0,"violations":[]},{"id":"10809","grade":1,"class":8,"number":9,"violationCount":0,"violations":[]},{"id":"10810","grade":1,"class":8,"number":10,"violationCount":0,"violations":[]},{"id":"10811","grade":1,"class":8,"number":11,"violationCount":0,"violations":[]},{"id":"10812","grade":1,"class":8,"number":12,"violationCount":0,"violations":[]},{"id":"10813","grade":1,"class":8,"number":13,"violationCount":0,"violations":[]},{"id":"10814","grade":1,"class":8,"number":14,"violationCount":1,"violations":[{"domain":"과학","prereq":"지구과학","advanced":"지구시스템과학"}]},{"id":"10815","grade":1,"class":8,"number":15,"violationCount":0,"violations":[]},{"id":"10816","grade":1,"class":8,"number":16,"violationCount":0,"violations":[]},{"id":"10817","grade":1,"class":8,"number":17,"violationCount":0,"violations":[]},{"id":"10818","grade":1,"class":8,"number":18,"violationCount":0,"violations":[]},{"id":"10819","grade":1,"class":8,"number":19,"violationCount":0,"violations":[]},{"id":"10820","grade":1,"class":8,"number":20,"violationCount":0,"violations":[]},{"id":"10821","grade":1,"class":8,"number":21,"violationCount":0,"violations":[]},{"id":"10822","grade":1,"class":8,"number":22,"violationCount":0,"violations":[]},{"id":"10823","grade":1,"class":8,"number":23,"violationCount":0,"violations":[]},{"id":"10824","grade":1,"class":8,"number":24,"violationCount":0,"violations":[]},{"id":"10825","grade":1,"class":8,"number":25,"violationCount":0,"violations":[]},{"id":"10826","grade":1,"class":8,"number":26,"violationCount":0,"violations":[]},{"id":"10827","grade":1,"class":8,"number":27,"violationCount":0,"violations":[]},{"id":"10828","grade":1,"class":8,"number":28,"violationCount":1,"violations":[{"domain":"제2외/AI","prereq":"인공지능 기초","advanced":"데이터 과학"}]},{"id":"10829","grade":1,"class":8,"number":29,"violationCount":0,"violations":[]},{"id":"10830","grade":1,"class":8,"number":30,"violationCount":0,"violations":[]},{"id":"10831","grade":1,"class":8,"number":31,"violationCount":0,"violations":[]},{"id":"10832","grade":1,"class":8,"number":32,"violationCount":0,"violations":[]},{"id":"10833","grade":1,"class":8,"number":33,"violationCount":0,"violations":[]},{"id":"10834","grade":1,"class":8,"number":34,"violationCount":0,"violations":[]},{"id":"10835","grade":1,"class":8,"number":35,"violationCount":0,"violations":[]},{"id":"10901","grade":1,"class":9,"number":1,"violationCount":0,"violations":[]},{"id":"10902","grade":1,"class":9,"number":2,"violationCount":0,"violations":[]},{"id":"10903","grade":1,"class":9,"number":3,"violationCount":0,"violations":[]},{"id":"10904","grade":1,"class":9,"number":4,"violationCount":0,"violations":[]},{"id":"10905","grade":1,"class":9,"number":5,"violationCount":0,"violations":[]},{"id":"10906","grade":1,"class":9,"number":6,"violationCount":0,"violations":[]},{"id":"10907","grade":1,"class":9,"number":7,"violationCount":0,"violations":[]},{"id":"10908","grade":1,"class":9,"number":8,"violationCount":0,"violations":[]},{"id":"10909","grade":1,"class":9,"number":9,"violationCount":1,"violations":[{"domain":"과학","prereq":"지구과학","advanced":"지구시스템과학"}]},{"id":"10910","grade":1,"class":9,"number":10,"violationCount":0,"violations":[]},{"id":"10911","grade":1,"class":9,"number":11,"violationCount":0,"violations":[]},{"id":"10912","grade":1,"class":9,"number":12,"violationCount":0,"violations":[]},{"id":"10913","grade":1,"class":9,"number":13,"violationCount":1,"violations":[{"domain":"과학","prereq":"물리학","advanced":"역학과 에너지"}]},{"id":"10914","grade":1,"class":9,"number":14,"violationCount":0,"violations":[]},{"id":"10915","grade":1,"class":9,"number":15,"violationCount":0,"violations":[]},{"id":"10916","grade":1,"class":9,"number":16,"violationCount":0,"violations":[]},{"id":"10917","grade":1,"class":9,"number":17,"violationCount":0,"violations":[]},{"id":"10918","grade":1,"class":9,"number":18,"violationCount":0,"violations":[]},{"id":"10919","grade":1,"class":9,"number":19,"violationCount":0,"violations":[]},{"id":"10920","grade":1,"class":9,"number":20,"violationCount":0,"violations":[]},{"id":"10921","grade":1,"class":9,"number":21,"violationCount":0,"violations":[]},{"id":"10922","grade":1,"class":9,"number":22,"violationCount":0,"violations":[]},{"id":"10923","grade":1,"class":9,"number":23,"violationCount":1,"violations":[{"domain":"제2외/AI","prereq":"일본어","advanced":"일본어 회화"}]},{"id":"10924","grade":1,"class":9,"number":24,"violationCount":0,"violations":[]},{"id":"10925","grade":1,"class":9,"number":25,"violationCount":0,"violations":[]},{"id":"10926","grade":1,"class":9,"number":26,"violationCount":0,"violations":[]},{"id":"10927","grade":1,"class":9,"number":27,"violationCount":0,"violations":[]},{"id":"10928","grade":1,"class":9,"number":28,"violationCount":0,"violations":[]},{"id":"10929","grade":1,"class":9,"number":29,"violationCount":0,"violations":[]},{"id":"10930","grade":1,"class":9,"number":30,"violationCount":0,"violations":[]},{"id":"10931","grade":1,"class":9,"number":31,"violationCount":0,"violations":[]},{"id":"10932","grade":1,"class":9,"number":32,"violationCount":0,"violations":[]},{"id":"10933","grade":1,"class":9,"number":33,"violationCount":1,"violations":[{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"}]},{"id":"10934","grade":1,"class":9,"number":34,"violationCount":0,"violations":[]},{"id":"10935","grade":1,"class":9,"number":35,"violationCount":0,"violations":[]},{"id":"11001","grade":1,"class":10,"number":1,"violationCount":0,"violations":[]},{"id":"11002","grade":1,"class":10,"number":2,"violationCount":0,"violations":[]},{"id":"11003","grade":1,"class":10,"number":3,"violationCount":1,"violations":[{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"}]},{"id":"11004","grade":1,"class":10,"number":4,"violationCount":0,"violations":[]},{"id":"11005","grade":1,"class":10,"number":5,"violationCount":0,"violations":[]},{"id":"11006","grade":1,"class":10,"number":6,"violationCount":0,"violations":[]},{"id":"11007","grade":1,"class":10,"number":7,"violationCount":0,"violations":[]},{"id":"11008","grade":1,"class":10,"number":8,"violationCount":2,"violations":[{"domain":"과학","prereq":"물리학","advanced":"역학과 에너지"},{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"}]},{"id":"11009","grade":1,"class":10,"number":9,"violationCount":0,"violations":[]},{"id":"11010","grade":1,"class":10,"number":10,"violationCount":0,"violations":[]},{"id":"11011","grade":1,"class":10,"number":11,"violationCount":0,"violations":[]},{"id":"11012","grade":1,"class":10,"number":12,"violationCount":0,"violations":[]},{"id":"11013","grade":1,"class":10,"number":13,"violationCount":0,"violations":[]},{"id":"11014","grade":1,"class":10,"number":14,"violationCount":2,"violations":[{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"},{"domain":"과학","prereq":"생명과학","advanced":"세포와 물질대사"}]},{"id":"11015","grade":1,"class":10,"number":15,"violationCount":0,"violations":[]},{"id":"11016","grade":1,"class":10,"number":16,"violationCount":0,"violations":[]},{"id":"11017","grade":1,"class":10,"number":17,"violationCount":1,"violations":[{"domain":"과학","prereq":"지구과학","advanced":"지구시스템과학"}]},{"id":"11018","grade":1,"class":10,"number":18,"violationCount":1,"violations":[{"domain":"제2외/AI","prereq":"중국어","advanced":"중국어 회화"}]},{"id":"11019","grade":1,"class":10,"number":19,"violationCount":1,"violations":[{"domain":"과학","prereq":"화학","advanced":"물질과 에너지"}]},{"id":"11020","grade":1,"class":10,"number":20,"violationCount":0,"violations":[]},{"id":"11021","grade":1,"class":10,"number":21,"violationCount":0,"violations":[]},{"id":"11022","grade":1,"class":10,"number":22,"violationCount":0,"violations":[]},{"id":"11023","grade":1,"class":10,"number":23,"violationCount":0,"violations":[]},{"id":"11024","grade":1,"class":10,"number":24,"violationCount":0,"violations":[]},{"id":"11025","grade":1,"class":10,"number":25,"violationCount":0,"violations":[]},{"id":"11026","grade":1,"class":10,"number":26,"violationCount":0,"violations":[]},{"id":"11027","grade":1,"class":10,"number":27,"violationCount":0,"violations":[]},{"id":"11028","grade":1,"class":10,"number":28,"violationCount":0,"violations":[]},{"id":"11029","grade":1,"class":10,"number":29,"violationCount":0,"violations":[]},{"id":"11030","grade":1,"class":10,"number":30,"violationCount":0,"violations":[]},{"id":"11031","grade":1,"class":10,"number":31,"violationCount":0,"violations":[]},{"id":"11032","grade":1,"class":10,"number":32,"violationCount":1,"violations":[{"domain":"과학","prereq":"생명과학","advanced":"세포와 물질대사"}]},{"id":"11033","grade":1,"class":10,"number":33,"violationCount":0,"violations":[]},{"id":"11034","grade":1,"class":10,"number":34,"violationCount":0,"violations":[]},{"id":"11035","grade":1,"class":10,"number":35,"violationCount":1,"violations":[{"domain":"제2외/AI","prereq":"인공지능 기초","advanced":"데이터 과학"}]}],"pairs":[{"prereq_idx":6,"prereq":"물리학","adv_idx":22,"adv":"역학과 에너지","domain":"과학"},{"prereq_idx":9,"prereq":"화학","adv_idx":20,"adv":"물질과 에너지","domain":"과학"},{"prereq_idx":7,"prereq":"생명과학","adv_idx":21,"adv":"세포와 물질대사","domain":"과학"},{"prereq_idx":8,"prereq":"지구과학","adv_idx":23,"adv":"지구시스템과학","domain":"과학"},{"prereq_idx":10,"prereq":"인공지능 기초","adv_idx":24,"adv":"데이터 과학","domain":"제2외/AI"},{"prereq_idx":11,"prereq":"일본어","adv_idx":25,"adv":"일본어 회화","domain":"제2외/AI"},{"prereq_idx":12,"prereq":"중국어","adv_idx":26,"adv":"중국어 회화","domain":"제2외/AI"}]}</script>
+<script>
+(function () {
+  const ORIGINAL_DATA = JSON.parse(document.getElementById('dashboard-data').textContent);
+
+  // Hierarchy rules: prerequisite (left, 선수과목) -> advanced (right, 후속·심화과목)
+  const RULES = [
+    { domain: '과학', prereq: '물리학', adv: '역학과 에너지' },
+    { domain: '과학', prereq: '화학', adv: '물질과 에너지' },
+    { domain: '과학', prereq: '생명과학', adv: '세포와 물질대사' },
+    { domain: '과학', prereq: '지구과학', adv: '지구시스템과학' },
+    { domain: '제2외/AI', prereq: '인공지능 기초', adv: '데이터 과학' },
+    { domain: '제2외/AI', prereq: '일본어', adv: '일본어 회화' },
+    { domain: '제2외/AI', prereq: '중국어', adv: '중국어 회화' },
+  ];
+
+  const els = {
+    kpiRow: document.getElementById('kpiRow'),
+    classGrid: document.getElementById('classGrid'),
+    classSelect: document.getElementById('classSelect'),
+    searchInput: document.getElementById('searchInput'),
+    onlyIssues: document.getElementById('onlyIssues'),
+    tableBody: document.getElementById('tableBody'),
+    emptyState: document.getElementById('emptyState'),
+    ruleGrid: document.getElementById('ruleGrid'),
+    fileInput: document.getElementById('fileInput'),
+    resetDataBtn: document.getElementById('resetDataBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    downloadBtn: document.getElementById('downloadBtn'),
+    sourceLabel: document.getElementById('sourceLabel'),
+    uploadStatus: document.getElementById('uploadStatus'),
+  };
+
+  let current = null;       // { summary, students, pairs }
+  let classStats = [];
+  let maxIssues = 1;
+  let state = { classFilter: '', search: '', onlyIssues: false };
+
+  // ---------- CSV parsing ----------
+  function parseCSV(text) {
+    const rows = [];
+    let field = '', row = [], inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
+        } else { field += c; }
+      } else if (c === '"') {
+        inQuotes = true;
+      } else if (c === ',') {
+        row.push(field); field = '';
+      } else if (c === '\r') {
+        // skip
+      } else if (c === '\n') {
+        row.push(field); rows.push(row); row = []; field = '';
+      } else {
+        field += c;
+      }
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  async function readFileSmart(file) {
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    if (bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+      return new TextDecoder('utf-8').decode(buf);
+    }
+    try {
+      return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+    } catch (e) {
+      return new TextDecoder('euc-kr').decode(buf);
+    }
+  }
+
+  function buildDatasetFromRows(rows) {
+    const headerIdx = rows.findIndex(r => r[1] === '과목');
+    if (headerIdx === -1) {
+      throw new Error('"과목" 헤더 행을 찾지 못했습니다. 원본과 같은 서식의 파일인지 확인해주세요.');
+    }
+    const header = rows[headerIdx];
+
+    const missing = [];
+    const resolvedRules = [];
+    for (const r of RULES) {
+      const preIdx = header.indexOf(r.prereq);
+      const advIdx = header.indexOf(r.adv);
+      if (preIdx === -1) missing.push(r.prereq);
+      if (advIdx === -1) missing.push(r.adv);
+      if (preIdx !== -1 && advIdx !== -1) resolvedRules.push({ ...r, preIdx, advIdx });
+    }
+
+    const studentRows = rows.slice(headerIdx + 1).filter(r => r[0] && /^\d{5}$/.test(r[0].trim()));
+    if (studentRows.length === 0) {
+      throw new Error('학번(5자리 숫자) 형식의 학생 행을 찾지 못했습니다.');
+    }
+
+    const students = studentRows.map(row => {
+      const id = row[0].trim();
+      const grade = Number(id[0]);
+      const klass = Number(id.slice(1, 3));
+      const number = Number(id.slice(3, 5));
+      const violations = [];
+      for (const r of resolvedRules) {
+        const adv = (row[r.advIdx] || '').trim();
+        const pre = (row[r.preIdx] || '').trim();
+        if (adv === '1' && pre !== '1') {
+          violations.push({ domain: r.domain, prereq: r.prereq, advanced: r.adv });
+        }
+      }
+      return { id, grade, class: klass, number, violationCount: violations.length, violations };
+    });
+    students.sort((a, b) => a.class - b.class || a.number - b.number);
+
+    const classesArr = [...new Set(students.map(s => s.class))].sort((a, b) => a - b);
+    const studentsWithViolations = students.filter(s => s.violationCount > 0).length;
+    const totalViolations = students.reduce((acc, s) => acc + s.violationCount, 0);
+
+    return {
+      summary: {
+        totalStudents: students.length,
+        totalClasses: classesArr.length,
+        studentsWithViolations,
+        totalViolations,
+      },
+      students,
+      pairs: resolvedRules.map(({ domain, prereq, adv }) => ({ domain, prereq, adv })),
+      missing,
+    };
+  }
+
+  // ---------- Rendering ----------
+  function computeClassStats(students) {
+    const classesArr = [...new Set(students.map(s => s.class))].sort((a, b) => a - b);
+    return classesArr.map(c => {
+      const list = students.filter(s => s.class === c);
+      const issues = list.filter(s => s.violationCount > 0).length;
+      return { class: c, total: list.length, issues };
+    });
+  }
+
+  function renderKPI() {
+    const { summary } = current;
+    const zeroIssueClasses = classStats.filter(c => c.issues === 0).length;
+    const kpis = [
+      { label: '전체 학생 수', value: summary.totalStudents, sub: `${summary.totalClasses}개 학급` },
+      { label: '오류 학생 수', value: summary.studentsWithViolations, sub: summary.totalStudents ? `전체의 ${(summary.studentsWithViolations / summary.totalStudents * 100).toFixed(1)}%` : '-', warn: true },
+      { label: '오류 건수', value: summary.totalViolations, sub: '위계 판정 기준 7개 조합 적용', warn: true },
+      { label: '오류 학생 0명 학급', value: zeroIssueClasses, sub: `${summary.totalClasses}개 중` },
+    ];
+    els.kpiRow.innerHTML = kpis.map(k => `
+      <div class="kpi ${k.warn ? 'warn' : ''}">
+        <span class="label">${k.label}</span>
+        <span class="value mono">${k.value}</span>
+        <span class="sub">${k.sub}</span>
+      </div>`).join('');
+  }
+
+  function renderClassGrid() {
+    const selected = state.classFilter ? Number(state.classFilter) : null;
+    els.classGrid.innerHTML = classStats.map(c => `
+      <button class="class-tile ${c.issues > 0 ? 'has-issue' : ''} ${selected === c.class ? 'active' : ''}" data-class="${c.class}">
+        <div class="cnum">${c.class}반</div>
+        <div class="ccount mono">${c.issues}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(c.issues / maxIssues * 100).toFixed(0)}%"></div></div>
+      </button>`).join('');
+  }
+
+  function renderClassSelect() {
+    const classesArr = classStats.map(c => c.class);
+    els.classSelect.innerHTML = `<option value="">전체 학급</option>` + classesArr.map(c => `<option value="${c}">${c}반</option>`).join('');
+    els.classSelect.value = state.classFilter;
+  }
+
+  function getFilteredList() {
+    return current.students.filter(s => {
+      if (state.classFilter && String(s.class) !== String(state.classFilter)) return false;
+      if (state.onlyIssues && s.violationCount === 0) return false;
+      if (state.search && !s.id.includes(state.search)) return false;
+      return true;
+    });
+  }
+
+  function renderTable() {
+    const list = getFilteredList();
+    if (list.length === 0) {
+      els.tableBody.innerHTML = '';
+      els.emptyState.style.display = 'block';
+      return;
+    }
+    els.emptyState.style.display = 'none';
+
+    let html = '';
+    let lastClass = null;
+    for (const s of list) {
+      if (s.class !== lastClass) {
+        const stat = classStats.find(c => c.class === s.class);
+        html += `<tr class="class-header"><td colspan="3">${s.class}반 <span class="mono" style="font-weight:600;color:var(--text-muted);font-size:12px;">· 학생 ${stat.total}명 · 오류 ${stat.issues}명</span></td></tr>`;
+        lastClass = s.class;
+      }
+      const isIssue = s.violationCount > 0;
+      html += `<tr class="student-row ${isIssue ? 'issue' : ''}">
+        <td class="id-cell mono">${s.id}</td>
+        <td>${isIssue ? `<span class="status-pill bad">오류 ${s.violationCount}</span>` : `<span class="status-pill ok">정상</span>`}</td>
+        <td>${isIssue ? `<div class="chip-row">${s.violations.map(v => `<span class="chip"><span class="pre">${v.prereq}</span><span class="arrow">→</span><span class="adv">${v.advanced}</span></span>`).join('')}</div>` : '<span style="color:var(--text-muted)">해당 없음</span>'}</td>
+      </tr>`;
+    }
+    els.tableBody.innerHTML = html;
+  }
+
+  function renderRuleGrid() {
+    const pairs = current.pairs;
+    const groups = [...new Set(pairs.map(p => p.domain))];
+    els.ruleGrid.innerHTML = groups.map(g => `
+      <div class="rule-group">
+        <h3>${g}</h3>
+        <div class="rule-list">
+          ${pairs.filter(p => p.domain === g).map(p => `
+            <div class="rule-item">
+              <span class="p">${p.prereq}</span>
+              <span>→</span>
+              <span class="a">${p.adv}</span>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  function renderAll() {
+    classStats = computeClassStats(current.students);
+    maxIssues = Math.max(1, ...classStats.map(c => c.issues));
+    renderKPI();
+    renderClassGrid();
+    renderClassSelect();
+    renderTable();
+    renderRuleGrid();
+  }
+
+  function loadDataset(data, sourceLabel) {
+    current = data;
+    state = { classFilter: '', search: '', onlyIssues: false };
+    els.searchInput.value = '';
+    els.onlyIssues.checked = false;
+    els.sourceLabel.textContent = sourceLabel;
+    renderAll();
+  }
+
+  // ---------- Events ----------
+  els.classGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.class-tile');
+    if (!btn) return;
+    const c = btn.dataset.class;
+    state.classFilter = (state.classFilter === c) ? '' : c;
+    renderClassGrid();
+    els.classSelect.value = state.classFilter;
+    renderTable();
+  });
+
+  els.classSelect.addEventListener('change', () => {
+    state.classFilter = els.classSelect.value;
+    renderClassGrid();
+    renderTable();
+  });
+
+  els.searchInput.addEventListener('input', () => {
+    state.search = els.searchInput.value.trim();
+    renderTable();
+  });
+
+  els.onlyIssues.addEventListener('change', () => {
+    state.onlyIssues = els.onlyIssues.checked;
+    renderTable();
+  });
+
+  els.resetBtn.addEventListener('click', () => {
+    state = { classFilter: '', search: '', onlyIssues: false };
+    els.searchInput.value = '';
+    els.onlyIssues.checked = false;
+    renderClassGrid();
+    renderClassSelect();
+    renderTable();
+  });
+
+  els.resetDataBtn.addEventListener('click', () => {
+    els.fileInput.value = '';
+    setUploadStatus('같은 서식(고유번호 + 과목별 1/0 신청표)의 CSV라면 학년도·학기가 달라도 자동으로 다시 계산됩니다.', '');
+    loadDataset(ORIGINAL_DATA, '원본 파일 (0617확인)');
+  });
+
+  els.fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setUploadStatus('불러오는 중...', '');
+    try {
+      const text = await readFileSmart(file);
+      const rows = parseCSV(text);
+      const data = buildDatasetFromRows(rows);
+      loadDataset(data, file.name);
+      if (data.missing.length) {
+        setUploadStatus(`불러왔습니다. 다만 다음 과목명을 찾지 못해 일부 판정 기준이 제외되었습니다: ${[...new Set(data.missing)].join(', ')}`, 'err');
+      } else {
+        setUploadStatus(`"${file.name}" 파일을 불러와 ${data.summary.totalStudents}명을 다시 계산했습니다.`, 'ok');
+      }
+    } catch (err) {
+      setUploadStatus('오류: ' + err.message, 'err');
+    }
+  });
+
+  function setUploadStatus(msg, kind) {
+    els.uploadStatus.textContent = msg;
+    els.uploadStatus.className = 'upload-status' + (kind ? ' ' + kind : '');
+  }
+
+  function escapeHTML(v) {
+    return String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function buildReportHTML(list) {
+    const stamp = new Date().toLocaleString('ko-KR');
+    const filterBits = [];
+    if (state.classFilter) filterBits.push(`${state.classFilter}반`);
+    if (state.onlyIssues) filterBits.push('오류 학생만');
+    if (state.search) filterBits.push(`검색: "${escapeHTML(state.search)}"`);
+    const filterText = filterBits.length ? filterBits.join(' · ') : '전체 보기';
+
+    let lastClass = null;
+    let rowsHTML = '';
+    for (const s of list) {
+      if (s.class !== lastClass) {
+        const stat = classStats.find(c => c.class === s.class);
+        rowsHTML += `<tr style="background:#eef2f6;"><td colspan="3" style="padding:10px 8px;font-weight:700;">${s.class}반 <span style="font-weight:500;color:#5b6b7c;font-size:12px;">· 학생 ${stat.total}명 · 오류 ${stat.issues}명</span></td></tr>`;
+        lastClass = s.class;
+      }
+      const isIssue = s.violationCount > 0;
+      const detail = isIssue
+        ? s.violations.map(v => `<span style="display:inline-block;background:#f8e6e1;border:1px solid #e3c9c0;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:12px;"><b style="color:#b3432e;">${escapeHTML(v.prereq)}</b> → ${escapeHTML(v.advanced)}</span>`).join('')
+        : '<span style="color:#5b6b7c;">해당 없음</span>';
+      rowsHTML += `<tr style="background:${isIssue ? '#fbf1ee' : '#fff'};border-bottom:1px solid #e3e8ed;">
+        <td style="padding:8px;font-weight:700;font-family:monospace;">${s.id}</td>
+        <td style="padding:8px;">${isIssue ? `<span style="background:#b3432e;color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;">오류 ${s.violationCount}</span>` : `<span style="background:#e3f1e9;color:#2f7d5c;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;">정상</span>`}</td>
+        <td style="padding:8px;">${detail}</td>
+      </tr>`;
+    }
+
+    return `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>위계 오류 점검 결과 · ${stamp}</title>
+<style>
+  body { font-family: -apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:32px; color:#1b2430; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .meta { color:#5b6b7c; font-size:13px; margin-bottom:20px; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  th { text-align:left; padding:8px; border-bottom:2px solid #d8e0e8; font-size:11.5px; color:#5b6b7c; text-transform:uppercase; letter-spacing:0.04em; }
+  @media print { body { margin:12px; } }
+</style></head>
+<body>
+  <h1>2026학년도 수강신청 위계 점검 결과</h1>
+  <p class="meta">생성 시각: ${stamp} · 필터: ${filterText} · 총 ${list.length}명 표시 (오류 ${list.filter(s => s.violationCount > 0).length}명)</p>
+  <table>
+    <thead><tr><th style="width:90px;">학번</th><th style="width:70px;">상태</th><th>위계 오류 상세 (선수과목 → 신청한 후속과목)</th></tr></thead>
+    <tbody>${rowsHTML}</tbody>
+  </table>
+  <p class="meta" style="margin-top:24px;">이 페이지에서 Ctrl+S로 HTML 저장, Ctrl+P로 인쇄 또는 PDF 저장이 가능합니다.</p>
+</body></html>`;
+  }
+
+  els.downloadBtn.addEventListener('click', () => {
+    const list = getFilteredList();
+    const html = buildReportHTML(list);
+    const win = window.open('', '_blank');
+    if (!win) {
+      setUploadStatus('새 창이 차단되었습니다. 브라우저의 팝업 차단을 해제한 뒤 다시 시도해주세요.', 'err');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  });
+
+  // ---------- Init ----------
+  loadDataset(ORIGINAL_DATA, '원본 파일 (0617확인)');
+})();
+</script>
